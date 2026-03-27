@@ -40,7 +40,7 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
         setClientSearch('')
         setNotes(appointment.notes ?? '')
                 // Use UTC components to avoid timezone shift (DB stores date at midnight UTC)
-        const d = appointment.date
+        const d = new Date(appointment.date)
         const year = d.getUTCFullYear()
         const month = String(d.getUTCMonth() + 1).padStart(2, '0')
         const day = String(d.getUTCDate()).padStart(2, '0')
