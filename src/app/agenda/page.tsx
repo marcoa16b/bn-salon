@@ -57,7 +57,7 @@ function AgendaContent() {
   }
 
   return (
-    <div>
+    <div className="pb-20">
       <PageHeader
         title="Agenda"
         subtitle={format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}

@@ -13,7 +13,7 @@ interface DayAppointmentsProps {
 export function DayAppointments({ appointments, loading, onEdit }: DayAppointmentsProps) {
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center py-8 pb-20">
         <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )

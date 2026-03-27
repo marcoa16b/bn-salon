@@ -48,7 +48,7 @@ function ServiciosContent() {
   }
 
   return (
-    <div>
+    <div className="pb-20">
       <PageHeader title="Servicios" subtitle={`${services.length} servicios`} />
 
       {loading ? (

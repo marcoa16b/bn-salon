@@ -45,7 +45,7 @@ function ClientesContent() {
   }, [])
 
   return (
-    <div>
+    <div className="pb-20">
       <PageHeader title="Clientes" subtitle={`${clients.length} clientes`} />
 
       {/* Search */}

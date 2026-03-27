@@ -75,7 +75,7 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
     c.phone.includes(clientSearch)
   )
 
-  const timeSlots = generateTimeSlots('08:00', '20:00', 30)
+  const timeSlots = generateTimeSlots('07:00', '22:00', 30)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
