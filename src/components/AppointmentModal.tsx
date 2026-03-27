@@ -5,7 +5,7 @@ import { Input } from './ui/Input'
 import { Button } from './ui/Button'
 import { Appointment, Client, Service } from '@prisma/client'
 import { generateTimeSlots, formatPrice } from '@/lib/utils'
-import { format } from 'date-fns'
+import { format, startOfDay } from 'date-fns'
 
 type AppointmentWithRelations = Appointment & { client?: Client; service: Service }
 
@@ -39,7 +39,12 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
         setSelectedService(appointment.service ?? null)
         setClientSearch('')
         setNotes(appointment.notes ?? '')
-        setDate(format(appointment.date, 'yyyy-MM-dd'))
+                // Use UTC components to avoid timezone shift (DB stores date at midnight UTC)
+        const d = appointment.date
+        const year = d.getUTCFullYear()
+        const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+        const day = String(d.getUTCDate()).padStart(2, '0')
+        setDate(`${year}-${month}-${day}`)
         setStartTime(appointment.startTime)
       } else {
         setSelectedClient(null)
