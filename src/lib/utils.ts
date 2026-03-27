@@ -16,9 +16,9 @@ export function formatTime(time: string): string {
 }
 
 export function formatPrice(amount: number): string {
-  return new Intl.NumberFormat('es-AR', {
+  return new Intl.NumberFormat('es-CR', {
     style: 'currency',
-    currency: 'ARS',
+    currency: 'CRC',
   }).format(amount)
 }
 

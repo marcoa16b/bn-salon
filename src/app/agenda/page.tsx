@@ -11,7 +11,7 @@ import { AppointmentModal } from '@/components/AppointmentModal'
 import { FAB } from '@/components/FAB'
 import { Appointment, Client, Service } from '@prisma/client'
 
-type AppointmentWithRelations = Appointment & { client: Client; service: Service }
+type AppointmentWithRelations = Appointment & { client?: Client; service: Service }
 
 function AgendaContent() {
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -22,6 +22,7 @@ function AgendaContent() {
     return { year: now.getFullYear(), month: now.getMonth() + 1 }
   })
   const [showModal, setShowModal] = useState(false)
+  const [editingAppointment, setEditingAppointment] = useState<AppointmentWithRelations | null>(null)
   const searchParams = useSearchParams()
 
   const isNew = searchParams.get('new') === 'true'
@@ -75,14 +76,15 @@ function AgendaContent() {
       </div>
 
       {/* Appointments for selected day */}
-      <DayAppointments appointments={appointments} loading={loading} />
+      <DayAppointments appointments={appointments} loading={loading} onEdit={setEditingAppointment} />
 
       <FAB />
       <AppointmentModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
+        open={showModal || !!editingAppointment}
+        onClose={() => { setShowModal(false); setEditingAppointment(null) }}
         defaultDate={selectedDate}
         onSave={() => window.location.reload()}
+        appointment={editingAppointment ?? undefined}
       />
     </div>
   )

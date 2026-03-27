@@ -3,18 +3,21 @@
 import { useState, useEffect } from 'react'
 import { Input } from './ui/Input'
 import { Button } from './ui/Button'
-import { Client, Service } from '@prisma/client'
-import { generateTimeSlots } from '@/lib/utils'
+import { Appointment, Client, Service } from '@prisma/client'
+import { generateTimeSlots, formatPrice } from '@/lib/utils'
 import { format } from 'date-fns'
+
+type AppointmentWithRelations = Appointment & { client?: Client; service: Service }
 
 interface AppointmentModalProps {
   open: boolean
   onClose: () => void
   defaultDate?: Date
   onSave?: () => void
+  appointment?: AppointmentWithRelations
 }
 
-export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSave }: AppointmentModalProps) {
+export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSave, appointment }: AppointmentModalProps) {
   const [clients, setClients] = useState<Client[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [clientSearch, setClientSearch] = useState('')
@@ -27,16 +30,28 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
   const [error, setError] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
 
+  const isEditing = !!appointment
+
   useEffect(() => {
     if (open) {
-      setSelectedClient(null)
-      setSelectedService(null)
-      setClientSearch('')
-      setNotes('')
-      setDate(format(defaultDate, 'yyyy-MM-dd'))
+      if (appointment) {
+        setSelectedClient(appointment.client ?? null)
+        setSelectedService(appointment.service ?? null)
+        setClientSearch('')
+        setNotes(appointment.notes ?? '')
+        setDate(format(appointment.date, 'yyyy-MM-dd'))
+        setStartTime(appointment.startTime)
+      } else {
+        setSelectedClient(null)
+        setSelectedService(null)
+        setClientSearch('')
+        setNotes('')
+        setDate(format(defaultDate, 'yyyy-MM-dd'))
+        setStartTime('10:00')
+      }
       setError('')
     }
-  }, [open, defaultDate])
+  }, [open, defaultDate, appointment])
 
   useEffect(() => {
     async function fetchData() {
@@ -79,8 +94,11 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
       const endMinutes = h * 60 + m + selectedService.durationMinutes
       const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
 
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
+      const url = isEditing ? `/api/appointments/${appointment.id}` : '/api/appointments'
+      const method = isEditing ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           date,
@@ -93,12 +111,35 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
         }),
       })
 
-      if (!res.ok) throw new Error('Error creating appointment')
+      if (!res.ok) throw new Error(`Error ${isEditing ? 'updating' : 'creating'} appointment`)
       
       onClose()
       onSave?.()
     } catch (err) {
-      setError('No se pudo agendar la cita')
+      setError(`No se pudo ${isEditing ? 'actualizar' : 'agendar'} la cita`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!appointment) return
+    if (!confirm('¿Estás seguro de que deseas eliminar esta cita?')) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch(`/api/appointments/${appointment.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) throw new Error('Error deleting appointment')
+      
+      onClose()
+      onSave?.()
+    } catch (err) {
+      setError('No se pudo eliminar la cita')
     } finally {
       setLoading(false)
     }
@@ -112,7 +153,7 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
       <div className="fixed inset-y-0 right-0 left-0 md:left-auto md:w-full md:max-w-md bg-white z-50 overflow-y-auto animate-slide-up md:animate-slide-in-right">
         <div className="p-6 pb-20">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-rose-900">Agendar Cita</h2>
+            <h2 className="text-lg font-semibold text-rose-900">{isEditing ? 'Editar Cita' : 'Agendar Cita'}</h2>
             <button onClick={onClose} className="text-rose-500 hover:text-rose-700">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -182,7 +223,7 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
                 <option value="">Seleccionar servicio...</option>
                 {services.map(s => (
                   <option key={s.id} value={s.id}>
-                    {s.title} — ${Number(s.price)} ({s.durationMinutes} min)
+                    {s.title} — {formatPrice(Number(s.price))} ({s.durationMinutes} min)
                   </option>
                 ))}
               </select>
@@ -240,11 +281,21 @@ export function AppointmentModal({ open, onClose, defaultDate = new Date(), onSa
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <div className="flex gap-3 pt-2">
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Eliminar
+                </button>
+              )}
               <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
                 Cancelar
               </Button>
               <Button type="submit" className="flex-1" disabled={loading || !selectedClient || !selectedService}>
-                {loading ? 'Guardando...' : 'Agendar'}
+                {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Agendar'}
               </Button>
             </div>
           </form>

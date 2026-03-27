@@ -2,14 +2,15 @@ import { Appointment, Client, Service } from '@prisma/client'
 import { AppointmentCard } from './AppointmentCard'
 import { EmptyState } from './ui/EmptyState'
 
-type AppointmentWithRelations = Appointment & { client: Client; service: Service }
+type AppointmentWithRelations = Appointment & { client?: Client; service: Service }
 
 interface DayAppointmentsProps {
   appointments: AppointmentWithRelations[]
   loading?: boolean
+  onEdit?: (appointment: AppointmentWithRelations) => void
 }
 
-export function DayAppointments({ appointments, loading }: DayAppointmentsProps) {
+export function DayAppointments({ appointments, loading, onEdit }: DayAppointmentsProps) {
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -35,7 +36,7 @@ export function DayAppointments({ appointments, loading }: DayAppointmentsProps)
   return (
     <div className="space-y-3">
       {appointments.map(apt => (
-        <AppointmentCard key={apt.id} appointment={apt} />
+        <AppointmentCard key={apt.id} appointment={apt} onEdit={onEdit} />
       ))}
     </div>
   )
